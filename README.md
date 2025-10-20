@@ -1,4 +1,6 @@
 Flight Price Automation
+
+
 This project is a Python-based automation tool that searches for the best round-trip flight deals for multiple destinations, ranks them based on price and duration, and sends a weekly summary report in a clean, responsive HTML email.
 
 Features
