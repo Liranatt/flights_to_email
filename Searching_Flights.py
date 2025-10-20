@@ -3,75 +3,101 @@
 import CONFIG
 import requests
 from datetime import datetime
+import ranking  # <-- Add import for the ranking function
+
+
+# --- HELPER FUNCTION _process_legs (NO CHANGES) ---
+def _process_legs(flight_legs_data):
+    # ... (this function remains exactly the same as before)
+    structured_legs = []
+    if not flight_legs_data: return structured_legs
+    for i, leg_data in enumerate(flight_legs_data):
+        structured_legs.append({
+            "type": "flight", "departure_airport": leg_data.get("departure_airport", {}).get("name", "N/A"),
+            "departure_time": leg_data.get("departure_airport", {}).get("time", "N/A"),
+            "arrival_airport": leg_data.get("arrival_airport", {}).get("name", "N/A"),
+            "arrival_time": leg_data.get("arrival_airport", {}).get("time", "N/A"),
+            "duration": leg_data.get("duration", 0), "airline": leg_data.get("airline", "N/A")
+        })
+        if i < len(flight_legs_data) - 1:
+            try:
+                arrival_time = datetime.fromisoformat(leg_data["arrival_airport"]["time"])
+                next_departure_time = datetime.fromisoformat(flight_legs_data[i + 1]["departure_airport"]["time"])
+                layover_duration = (next_departure_time - arrival_time).total_seconds() / 60
+                structured_legs.append({
+                    "type": "layover", "location": leg_data.get("arrival_airport", {}).get("name", "N/A"),
+                    "duration": int(layover_duration)
+                })
+            except (KeyError, ValueError):
+                structured_legs.append({"type": "layover", "location": "N/A", "duration": "N/A"})
+    return structured_legs
+
 
 class search_flights:
     def __init__(self, ARRIVAL_ID):
-        self.params = {
-            "api_key": CONFIG.API_KEY,
-            "engine": "google_flights",
-            "departure_id": CONFIG.DEPARTURE_ID,
-            "arrival_id": ARRIVAL_ID,
-            "outbound_date": CONFIG.OUTBOUND_DATE,
-            "return_date": CONFIG.RETURN_DATE,
-            "currency": "USD",
-            "hl": "en"
+        self.base_params = {
+            "api_key": CONFIG.API_KEY, "engine": "google_flights", "departure_id": CONFIG.DEPARTURE_ID,
+            "arrival_id": ARRIVAL_ID, "outbound_date": CONFIG.OUTBOUND_DATE, "return_date": CONFIG.RETURN_DATE,
+            "currency": "USD", "hl": "en"
         }
-        self.response = None
 
-    def execute_search(self):
+    def _execute_api_call(self, params):
         print("Fetching data from SerpApi...")
-        self.response = requests.get("https://serpapi.com/search", params=self.params)
+        try:
+            response = requests.get("https://serpapi.com/search", params=params)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"API request failed: {e}")
+            return None
 
-    def extracting_info(self):
-        if not self.response or self.response.status_code != 200:
-             print(f"Failed to get a valid response for {self.params['arrival_id']}")
-             return []
-
-        api_data = self.response.json()
-        flight_categories = ["best_flights", "other_flights"]
+    def get_outbound_flights(self):
+        # ... (this method remains exactly the same as before)
+        api_data = self._execute_api_call(self.base_params)
+        if not api_data: return []
         extracted_flights = []
-
-        for category in flight_categories:
-            if category in api_data:
-                for item in api_data.get(category, []):
-                    flight_legs_data = item.get("flights", [])
-                    
-                    structured_legs = []
-                    # Process each flight leg and the layover that follows it
-                    for i, leg_data in enumerate(flight_legs_data):
-                        # Add the flight leg
-                        structured_legs.append({
-                            "type": "flight",
-                            "departure_airport": leg_data.get("departure_airport", {}).get("name", "N/A"),
-                            "departure_time": leg_data.get("departure_airport", {}).get("time", "N/A"),
-                            "arrival_airport": leg_data.get("arrival_airport", {}).get("name", "N/A"),
-                            "arrival_time": leg_data.get("arrival_airport", {}).get("time", "N/A"),
-                            "duration": leg_data.get("duration", 0),
-                            "airline": leg_data.get("airline", "N/A")
-                        })
-
-                        # If this isn't the last leg, calculate the layover
-                        if i < len(flight_legs_data) - 1:
-                            try:
-                                arrival_time = datetime.fromisoformat(leg_data["arrival_airport"]["time"])
-                                next_departure_time = datetime.fromisoformat(flight_legs_data[i+1]["departure_airport"]["time"])
-                                layover_duration = (next_departure_time - arrival_time).total_seconds() / 60
-                                
-                                structured_legs.append({
-                                    "type": "layover",
-                                    "location": leg_data.get("arrival_airport", {}).get("name", "N/A"),
-                                    "duration": int(layover_duration)
-                                })
-                            except (KeyError, ValueError):
-                                # Handle cases where time parsing might fail
-                                structured_legs.append({"type": "layover", "location": "N/A", "duration": "N/A"})
-                    
-                    flight_info = {
-                        "price": item.get("price"),
-                        "total_duration": item.get("total_duration"),
-                        "num_connections": len(flight_legs_data) - 1 if flight_legs_data else 0,
-                        "legs": structured_legs # The new detailed structure
-                    }
-                    extracted_flights.append(flight_info)
-
+        for category in ["best_flights", "other_flights"]:
+            for item in api_data.get(category, []):
+                outbound_legs_data = item.get("flights", [])
+                flight_info = {
+                    "price": item.get("price"), "total_duration": item.get("total_duration"),
+                    "num_connections": len(outbound_legs_data) - 1 if outbound_legs_data else 0,
+                    "outbound_legs": _process_legs(outbound_legs_data),
+                    "departure_token": item.get("departure_token")
+                }
+                extracted_flights.append(flight_info)
         return extracted_flights
+
+    # --- NEW AND IMPROVED METHOD ---
+    def get_best_return_flight(self, departure_token):
+        """
+        Uses a departure_token to fetch all return flights, ranks them,
+        and returns the single best option.
+        """
+        if not departure_token: return None
+
+        params = self.base_params.copy()
+        params["departure_token"] = departure_token
+        api_data = self._execute_api_call(params)
+        if not api_data: return None
+
+        # Process ALL available return options
+        all_return_options = []
+        for category in ["best_flights", "other_flights"]:
+            for item in api_data.get(category, []):
+                return_legs_data = item.get("flights", [])
+                option = {
+                    "price": item.get("price"),
+                    "total_duration": item.get("total_duration"),
+                    "num_connections": len(return_legs_data) - 1 if return_legs_data else 0,
+                    "return_legs": _process_legs(return_legs_data)
+                }
+                all_return_options.append(option)
+
+        if not all_return_options: return None
+
+        # Rank all return options using our existing logic
+        ranked_return_options = ranking.rank_and_filter_flights(all_return_options)
+
+        # Return only the single best-ranked option
+        return ranked_return_options[0] if ranked_return_options else None
