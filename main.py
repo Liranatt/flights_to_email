@@ -5,12 +5,12 @@ import SEND_EMAIL
 import create_html
 import Searching_Flights
 import ranking  # <-- Import the new ranking module
-
+import os 
 
 def job():
     destinations = ["ATH", "BCN", "MUC", "VIE"]
     flights_data_per_destination = {}
-
+    print(f"DEBUG: API Key being used starts with: {os.environ.get('API_KEY', 'KEY_NOT_FOUND')[:5]}")
     print("--- Starting weekly flight check ---")
     for destination in destinations:
         print(f"Searching flights for destination: {destination}")
@@ -38,4 +38,5 @@ def job():
 
 
 if __name__ == "__main__":
+
     job()
