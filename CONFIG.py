@@ -11,7 +11,7 @@ RETURN_DATE = "2026-03-22"
 # Email Config
 # Reads email credentials from the environment variables
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL')
-RECEIVER_EMAIL = "me@yotam.net"
+RECEIVER_EMAIL = "marcelattar@gmail.com"
 EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
