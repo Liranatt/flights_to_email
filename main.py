@@ -1,26 +1,26 @@
+# In main.py
+
 import CONFIG
 import SEND_EMAIL
 import create_html
 import Searching_Flights
 import ranking
 
-
-# MODIFIED: The job function now also accepts date strings
+# This is the function your app.py imports and calls.
+# It remains unchanged.
 def job(destinations_list, receiver_emails_list, outbound_date_str, return_date_str):
     flights_data_per_destination = {}
 
     print("--- Starting flight check ---")
     for destination in destinations_list:
         print(f"Searching flights for destination: {destination}")
-
-        # MODIFIED: Pass the dates to the search_flights constructor
+        
         search_instance = Searching_Flights.search_flights(
-            destination,
-            outbound_date_str,
+            destination, 
+            outbound_date_str, 
             return_date_str
         )
 
-        # ... (rest of the flight search logic is identical) ...
         all_outbound_flights = search_instance.get_outbound_flights()
 
         if all_outbound_flights:
@@ -58,12 +58,29 @@ def job(destinations_list, receiver_emails_list, outbound_date_str, return_date_
     return True
 
 
-# MODIFIED: We no longer want this to run automatically
-# We will call the job() function from our new app.py file
+# --- NEW LOGIC FOR GITHUB ACTIONS ---
+# This block will ONLY run when you execute "python main.py"
+# It will NOT run when you import main.py from app.py
 if __name__ == "__main__":
-    # You can keep this for testing, but it's no longer the main entry point
-    print("Running in test mode. Use app.py to run the UI.")
-    # test_dests = ["ATH", "BCN"]
-    # test_emails = ["your_test_email@gmail.com"]
-    # job(test_dests, test_emails)
-    pass
+    print("Running in GitHub Actions (script) mode...")
+
+    # 1. Get default destinations (from your original main.py)
+    default_destinations = ["ATH", "BCN", "MUC", "VIE"]
+    
+    # 2. Get default dates from CONFIG.py
+    default_out_date = CONFIG.OUTBOUND_DATE
+    default_ret_date = CONFIG.RETURN_DATE
+    
+    # 3. Get default email from CONFIG.py (which reads from env variables)
+    default_email = CONFIG.RECEIVER_EMAIL
+    
+    if not all([default_out_date, default_ret_date, default_email]):
+        print("Error: Missing default configuration for dates or receiver email.")
+    else:
+        # Call the job function with the defaults
+        job(
+            default_destinations, 
+            [default_email],  # Pass as a list
+            default_out_date, 
+            default_ret_date
+        )
