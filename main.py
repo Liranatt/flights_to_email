@@ -1,20 +1,24 @@
-# In main.py
-
 import CONFIG
 import SEND_EMAIL
 import create_html
 import Searching_Flights
 import ranking
 
-# MODIFIED: The job function now takes arguments
-def job(destinations_list, receiver_emails_list):
-    # The destinations list is now passed in
+
+# MODIFIED: The job function now also accepts date strings
+def job(destinations_list, receiver_emails_list, outbound_date_str, return_date_str):
     flights_data_per_destination = {}
 
     print("--- Starting flight check ---")
     for destination in destinations_list:
         print(f"Searching flights for destination: {destination}")
-        search_instance = Searching_Flights.search_flights(destination)
+
+        # MODIFIED: Pass the dates to the search_flights constructor
+        search_instance = Searching_Flights.search_flights(
+            destination,
+            outbound_date_str,
+            return_date_str
+        )
 
         # ... (rest of the flight search logic is identical) ...
         all_outbound_flights = search_instance.get_outbound_flights()
@@ -46,13 +50,11 @@ def job(destinations_list, receiver_emails_list):
 
     if flights_data_per_destination:
         html_report = create_html.generate_html_summary(flights_data_per_destination)
-        # MODIFIED: Pass the recipient list to the send_html_email function
         SEND_EMAIL.send_html_email(html_report, receiver_emails_list)
     else:
         print("No flight data found for any destination.")
 
     print("--- Flight check finished ---")
-    # Return a status to the UI
     return True
 
 
