@@ -1,2 +1,4 @@
 # In requirements.txt
+
 requests
+streamlit
