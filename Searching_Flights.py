@@ -34,14 +34,22 @@ def _process_legs(flight_legs_data):
 
 
 class search_flights:
-    def __init__(self, ARRIVAL_ID):
+    # MODIFIED: __init__ now accepts outbound_date and return_date
+    def __init__(self, ARRIVAL_ID, outbound_date, return_date):
         self.base_params = {
-            "api_key": CONFIG.API_KEY, "engine": "google_flights", "departure_id": CONFIG.DEPARTURE_ID,
-            "arrival_id": ARRIVAL_ID, "outbound_date": CONFIG.OUTBOUND_DATE, "return_date": CONFIG.RETURN_DATE,
-            "currency": "USD", "hl": "en"
+            "api_key": CONFIG.API_KEY,
+            "engine": "google_flights",
+            "departure_id": CONFIG.DEPARTURE_ID,
+            "arrival_id": ARRIVAL_ID,
+            # MODIFIED: Use the arguments instead of CONFIG file
+            "outbound_date": outbound_date,
+            "return_date": return_date,
+            "currency": "USD",
+            "hl": "en"
         }
 
     def _execute_api_call(self, params):
+        # ... (this method remains the same)
         print("Fetching data from SerpApi...")
         try:
             response = requests.get("https://serpapi.com/search", params=params)
@@ -52,7 +60,7 @@ class search_flights:
             return None
 
     def get_outbound_flights(self):
-        # ... (this method remains exactly the same as before)
+        # ... (this method remains the same)
         api_data = self._execute_api_call(self.base_params)
         if not api_data: return []
         extracted_flights = []
@@ -68,12 +76,8 @@ class search_flights:
                 extracted_flights.append(flight_info)
         return extracted_flights
 
-    # --- NEW AND IMPROVED METHOD ---
     def get_best_return_flight(self, departure_token):
-        """
-        Uses a departure_token to fetch all return flights, ranks them,
-        and returns the single best option.
-        """
+        # ... (this method remains the same)
         if not departure_token: return None
 
         params = self.base_params.copy()
@@ -81,7 +85,6 @@ class search_flights:
         api_data = self._execute_api_call(params)
         if not api_data: return None
 
-        # Process ALL available return options
         all_return_options = []
         for category in ["best_flights", "other_flights"]:
             for item in api_data.get(category, []):
@@ -95,9 +98,5 @@ class search_flights:
                 all_return_options.append(option)
 
         if not all_return_options: return None
-
-        # Rank all return options using our existing logic
         ranked_return_options = ranking.rank_and_filter_flights(all_return_options)
-
-        # Return only the single best-ranked option
         return ranked_return_options[0] if ranked_return_options else None
