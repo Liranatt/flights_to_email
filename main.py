@@ -6,8 +6,7 @@ import create_html
 import Searching_Flights
 import ranking
 
-# This is the function your app.py imports and calls.
-# It remains unchanged.
+
 def job(destinations_list, receiver_emails_list, outbound_date_str, return_date_str):
     flights_data_per_destination = {}
 
@@ -58,29 +57,24 @@ def job(destinations_list, receiver_emails_list, outbound_date_str, return_date_
     return True
 
 
-# --- NEW LOGIC FOR GITHUB ACTIONS ---
-# This block will ONLY run when you execute "python main.py"
-# It will NOT run when you import main.py from app.py
+
 if __name__ == "__main__":
     print("Running in GitHub Actions (script) mode...")
 
-    # 1. Get default destinations (from your original main.py)
     default_destinations = ["ATH", "BCN", "MUC", "VIE"]
     
-    # 2. Get default dates from CONFIG.py
     default_out_date = CONFIG.OUTBOUND_DATE
     default_ret_date = CONFIG.RETURN_DATE
     
-    # 3. Get default email from CONFIG.py (which reads from env variables)
     default_email = CONFIG.RECEIVER_EMAIL
     
     if not all([default_out_date, default_ret_date, default_email]):
         print("Error: Missing default configuration for dates or receiver email.")
     else:
-        # Call the job function with the defaults
         job(
             default_destinations, 
             [default_email],  # Pass as a list
             default_out_date, 
             default_ret_date
         )
+
