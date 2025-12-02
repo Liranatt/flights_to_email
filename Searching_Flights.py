@@ -3,12 +3,9 @@
 import CONFIG
 import requests
 from datetime import datetime
-import ranking  # <-- Add import for the ranking function
+import ranking  
 
-
-# --- HELPER FUNCTION _process_legs (NO CHANGES) ---
 def _process_legs(flight_legs_data):
-    # ... (this function remains exactly the same as before)
     structured_legs = []
     if not flight_legs_data: return structured_legs
     for i, leg_data in enumerate(flight_legs_data):
@@ -34,14 +31,12 @@ def _process_legs(flight_legs_data):
 
 
 class search_flights:
-    # MODIFIED: __init__ now accepts outbound_date and return_date
     def __init__(self, ARRIVAL_ID, outbound_date, return_date):
         self.base_params = {
             "api_key": CONFIG.API_KEY,
             "engine": "google_flights",
             "departure_id": CONFIG.DEPARTURE_ID,
             "arrival_id": ARRIVAL_ID,
-            # MODIFIED: Use the arguments instead of CONFIG file
             "outbound_date": outbound_date,
             "return_date": return_date,
             "currency": "USD",
@@ -49,7 +44,6 @@ class search_flights:
         }
 
     def _execute_api_call(self, params):
-        # ... (this method remains the same)
         print("Fetching data from SerpApi...")
         try:
             response = requests.get("https://serpapi.com/search", params=params)
@@ -60,7 +54,6 @@ class search_flights:
             return None
 
     def get_outbound_flights(self):
-        # ... (this method remains the same)
         api_data = self._execute_api_call(self.base_params)
         if not api_data: return []
         extracted_flights = []
@@ -77,7 +70,6 @@ class search_flights:
         return extracted_flights
 
     def get_best_return_flight(self, departure_token):
-        # ... (this method remains the same)
         if not departure_token: return None
 
         params = self.base_params.copy()
@@ -100,3 +92,4 @@ class search_flights:
         if not all_return_options: return None
         ranked_return_options = ranking.rank_and_filter_flights(all_return_options)
         return ranked_return_options[0] if ranked_return_options else None
+
