@@ -61,7 +61,7 @@ def job(destinations_list, receiver_emails_list, outbound_date_str, return_date_
 if __name__ == "__main__":
     print("Running in GitHub Actions (script) mode...")
 
-    default_destinations = ["ATH", "BCN", "MUC", "VIE", "FCO", "MXP", "MAD"]
+    default_destinations = []
     
     default_out_date = CONFIG.OUTBOUND_DATE
     default_ret_date = CONFIG.RETURN_DATE
